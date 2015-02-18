@@ -13,23 +13,16 @@ module Phase5
       @params = {}
 
       if req.query_string
-        queries = req.query_string.split("&")
-        queries.each do |query|
-          query_hash = parse_www_encoded_form(query)
+          query_hash = parse_www_encoded_form(req.query_string)
           @params.merge!(query_hash)
-        end
-
       end
 
       if req.body
-        queries = req.body.split("&")
-        queries.each do |query|
-          query_hash = parse_www_encoded_form(query)
-          @params.merge!(query_hash)
-        end
+        query_hash = parse_www_encoded_form(req.body)
+        @params.merge!(query_hash)
       end
 
-      # @params
+      @params.merge!(route_params)
     end
 
     def [](key)
@@ -49,17 +42,32 @@ module Phase5
     # should return
     # { "user" => { "address" => { "street" => "main", "zip" => "89436" } } }
     def parse_www_encoded_form(www_encoded_form)
-      parsed = {}
+      params = {}
 
-      pair = www_encoded_form.split("=")
+      pairs = www_encoded_form.split("&")
+      # p pairs
 
-      p pair
+      pairs.each do |pair|
+        hash = params
+        pair = pair.split("=")
+        value = pair[1]
 
-      p parse_key(pair[0])
+        keys = parse_key(pair[0])
 
-      parsed[pair[0]] = pair[1]
+        keys.each do |key|
+          if hash[key].nil? && key != keys.last
 
-      parsed
+            hash[key] = {}
+            hash = hash[key]
+          elsif hash[key].is_a?(Hash)
+            hash = hash[key]
+          else
+            hash[key] = value
+          end
+        end
+      end
+
+      params
     end
 
     # this should return an array
